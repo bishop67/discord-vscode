@@ -77,6 +77,10 @@
 			"image": "fortran"
 		},
 		{
+			"language": "fountain",
+			"image": "fountain"
+		},
+		{
 			"language": "fsharp",
 			"image": "fsharp"
 		},
@@ -851,6 +855,9 @@
 		".flowconfig": {
 			"image": "flowconfig"
 		},
+		".fountain": {
+			"image": "fountain"
+		},
 		".fs": {
 			"image": "fsharp"
 		},
@@ -1459,6 +1466,9 @@
 		},
 		".sk": {
 			"image": "skript"
+		},
+		".spmd": {
+			"image": "fountain"
 		},
 		".sqf": {
 			"image": "sqf"
