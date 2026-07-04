@@ -171,13 +171,15 @@ export async function activity(previous: ActivityPayload = {}) {
 	const swapBigAndSmallImage = config[CONFIG_KEYS.SwapBigAndSmallImage];
 
 	const appName = env.appName;
-	const defaultSmallImageKey = debug.activeDebugSession
+	const defaultSmallImageKeyBase = debug.activeDebugSession
 		? DEBUG_IMAGE_KEY
 		: appName.includes('Cursor')
 			? CURSOR_IMAGE_KEY
 			: appName.includes('Insiders')
 				? VSCODE_INSIDERS_IMAGE_KEY
 				: VSCODE_IMAGE_KEY;
+	// Same rotation treatment for the small badge (vscode-1, vscode-2, debug-1, ...).
+	const defaultSmallImageKey = pickRotatingImageKey(defaultSmallImageKeyBase);
 	const defaultSmallImageText = config[CONFIG_KEYS.SmallImage].replace(REPLACE_KEYS.AppName, appName);
 	const defaultLargeImageText = config[CONFIG_KEYS.LargeImageIdling];
 	// Idle now rotates through a pool of variants (idle-vscode-1, idle-vscode-2, ...)
