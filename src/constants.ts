@@ -15,6 +15,13 @@ export const VSCODE_IMAGE_KEY = 'vscode' as const;
 export const VSCODE_INSIDERS_IMAGE_KEY = 'vscode-insiders' as const;
 export const CURSOR_IMAGE_KEY = 'cursor' as const;
 
+/**
+ * How many rotating image variants exist per situation (idle, active, debugging, etc).
+ * Each base key (e.g. "vscode") is expected to have this many uploaded Discord assets
+ * named "vscode-1", "vscode-2", "vscode-3", ...
+ */
+export const ROTATING_IMAGE_VARIANT_COUNT = 3 as const;
+
 export const UNKNOWN_GIT_BRANCH = 'Unknown' as const;
 export const UNKNOWN_GIT_REPO_NAME = 'Unknown' as const;
 

@@ -2,7 +2,7 @@ import { basename } from 'node:path';
 import type { TextDocument, WorkspaceConfiguration } from 'vscode';
 import { workspace, extensions } from 'vscode';
 import type { API, GitExtension } from './@types/git';
-import { KNOWN_EXTENSIONS, KNOWN_LANGUAGES } from './constants';
+import { KNOWN_EXTENSIONS, KNOWN_LANGUAGES, ROTATING_IMAGE_VARIANT_COUNT } from './constants';
 import { log, LogLevel } from './logger';
 
 let git: API | null | undefined;
@@ -38,6 +38,16 @@ export const toLower = (str: string) => str.toLocaleLowerCase();
 export const toUpper = (str: string) => str.toLocaleUpperCase();
 
 export const toTitle = (str: string) => toLower(str).replace(/^\w/, (char) => toUpper(char));
+
+/**
+ * Picks a random rotating variant of a base image key, e.g. "vscode" -> "vscode-2".
+ * Expects matching Discord Rich Presence assets to be uploaded for every variant
+ * (vscode-1, vscode-2, vscode-3, ...) up to ROTATING_IMAGE_VARIANT_COUNT.
+ */
+export function pickRotatingImageKey(baseKey: string) {
+	const variant = Math.floor(Math.random() * ROTATING_IMAGE_VARIANT_COUNT) + 1;
+	return `${baseKey}-${variant}`;
+}
 
 export function resolveFileIcon(document: TextDocument) {
 	const filename = basename(document.fileName);
