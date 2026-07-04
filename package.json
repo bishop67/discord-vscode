@@ -1,11 +1,11 @@
 {
 	"$schema": "https://json.schemastore.org/package.json",
-	"name": "discord-vscode",
-	"displayName": "Discord Presence",
+	"name": "discord-vscode-custom",
+	"displayName": "Discord Presence (Custom)",
 	"version": "5.9.3",
 	"description": "Update your discord status with a rich presence.",
 	"private": true,
-	"publisher": "icrawl",
+	"publisher": "bishop-local",
 	"scripts": {
 		"build:check": "tsc --noEmit",
 		"build": "pnpm run lint && node esbuild.mjs",
