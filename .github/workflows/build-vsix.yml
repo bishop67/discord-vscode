@@ -1,0 +1,58 @@
+name: Build and Release VSIX
+
+# Runs on every push to main, and also lets you trigger it manually from
+# the Actions tab if you ever want to force a rebuild without a new commit.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write # needed to create/update the GitHub Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build extension bundle
+        run: node esbuild.mjs
+
+      - name: Package .vsix
+        run: npx vsce package --no-dependencies
+
+      - name: Find the built .vsix
+        id: find_vsix
+        run: |
+          FILE=$(ls *.vsix | head -n 1)
+          echo "vsix_path=$FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Publish/update "latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          body: |
+            Automatically built from the latest commit on `main`.
+            Commit: ${{ github.sha }}
+
+            Download the `.vsix` below, then install it in VS Code with:
+
+            ```
+            code --install-extension <downloaded-file>.vsix
+            ```
+          prerelease: true
+          files: ${{ steps.find_vsix.outputs.vsix_path }}
