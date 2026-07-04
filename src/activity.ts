@@ -16,7 +16,7 @@ import {
 	VSCODE_INSIDERS_IMAGE_KEY,
 } from './constants';
 import { log, LogLevel } from './logger';
-import { getConfig, getGit, resolveFileIcon, toLower, toTitle, toUpper } from './util';
+import { getConfig, getGit, pickRotatingImageKey, resolveFileIcon, toLower, toTitle, toUpper } from './util';
 
 interface ActivityPayload {
 	buttons?: { label: string; url: string }[] | undefined;
@@ -180,6 +180,9 @@ export async function activity(previous: ActivityPayload = {}) {
 				: VSCODE_IMAGE_KEY;
 	const defaultSmallImageText = config[CONFIG_KEYS.SmallImage].replace(REPLACE_KEYS.AppName, appName);
 	const defaultLargeImageText = config[CONFIG_KEYS.LargeImageIdling];
+	// Idle now rotates through a pool of variants (idle-vscode-1, idle-vscode-2, ...)
+	// instead of always showing the same fixed idle image.
+	const idleImageKey = pickRotatingImageKey(IDLE_IMAGE_KEY);
 	const removeDetails = config[CONFIG_KEYS.RemoveDetails];
 	const removeLowerDetails = config[CONFIG_KEYS.RemoveLowerDetails];
 	const removeRemoteRepository = config[CONFIG_KEYS.RemoveRemoteRepository];
@@ -192,7 +195,7 @@ export async function activity(previous: ActivityPayload = {}) {
 			? undefined
 			: await details(CONFIG_KEYS.DetailsIdling, CONFIG_KEYS.DetailsEditing, CONFIG_KEYS.DetailsDebugging),
 		startTimestamp: config[CONFIG_KEYS.RemoveTimestamp] ? undefined : (previous.startTimestamp ?? Date.now()),
-		largeImageKey: IDLE_IMAGE_KEY,
+		largeImageKey: idleImageKey,
 		largeImageText: defaultLargeImageText,
 		smallImageKey: defaultSmallImageKey,
 		smallImageText: defaultSmallImageText,
@@ -203,7 +206,7 @@ export async function activity(previous: ActivityPayload = {}) {
 			...state,
 			largeImageKey: defaultSmallImageKey,
 			largeImageText: defaultSmallImageText,
-			smallImageKey: IDLE_IMAGE_KEY,
+			smallImageKey: idleImageKey,
 			smallImageText: defaultLargeImageText,
 		};
 	}
