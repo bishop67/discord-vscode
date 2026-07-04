@@ -1,8 +1,10 @@
 import { basename, parse, sep } from 'node:path';
 import type { Selection, TextDocument, Diagnostic } from 'vscode';
-import { debug, window, workspace, languages, DiagnosticSeverity } from 'vscode';
+import { debug, env, window, workspace, languages, DiagnosticSeverity } from 'vscode';
 import {
 	CONFIG_KEYS,
+	CURSOR_IMAGE_KEY,
+	DEBUG_IMAGE_KEY,
 	EMPTY,
 	FAKE_EMPTY,
 	FILE_SIZES,
@@ -10,6 +12,8 @@ import {
 	REPLACE_KEYS,
 	UNKNOWN_GIT_BRANCH,
 	UNKNOWN_GIT_REPO_NAME,
+	VSCODE_IMAGE_KEY,
+	VSCODE_INSIDERS_IMAGE_KEY,
 } from './constants';
 import { log, LogLevel } from './logger';
 import { getConfig, getGit, pickRotatingImageKey, resolveFileIcon, toLower, toTitle, toUpper } from './util';
@@ -164,10 +168,21 @@ async function details(idling: CONFIG_KEYS, editing: CONFIG_KEYS, debugging: CON
 
 export async function activity(previous: ActivityPayload = {}) {
 	const config = getConfig();
+	const swapBigAndSmallImage = config[CONFIG_KEYS.SwapBigAndSmallImage];
 
-	// Idle gets a rotating bunny pool (e.g. "idle-vscode-1", "idle-vscode-2", ...).
-	// This ONLY shows when no file is open. Once a file is open, the language icon takes over
-	// and no badge/overlay image is shown at all — just the single large image.
+	const appName = env.appName;
+	// Bunny badge shown alongside the file icon while editing (rotates each update).
+	const activeBunnyKeyBase = debug.activeDebugSession
+		? DEBUG_IMAGE_KEY
+		: appName.includes('Cursor')
+			? CURSOR_IMAGE_KEY
+			: appName.includes('Insiders')
+				? VSCODE_INSIDERS_IMAGE_KEY
+				: VSCODE_IMAGE_KEY;
+	const activeBunnyKey = pickRotatingImageKey(activeBunnyKeyBase);
+	const activeBunnyText = config[CONFIG_KEYS.SmallImage].replace(REPLACE_KEYS.AppName, appName);
+	// Idle gets its own rotating bunny pool (e.g. "idle-vscode-1", "idle-vscode-2", ...).
+	// While idling there's no file icon to pair it with, so this shows alone.
 	const idleImageKey = pickRotatingImageKey(IDLE_IMAGE_KEY);
 	const defaultLargeImageText = config[CONFIG_KEYS.LargeImageIdling];
 	const removeDetails = config[CONFIG_KEYS.RemoveDetails];
@@ -204,11 +219,11 @@ export async function activity(previous: ActivityPayload = {}) {
 	}
 
 	if (window.activeTextEditor) {
-		const largeImageKey = resolveFileIcon(window.activeTextEditor.document);
-		const largeImageText = config[CONFIG_KEYS.LargeImage]
-			.replace(REPLACE_KEYS.LanguageLowerCase, toLower(largeImageKey))
-			.replace(REPLACE_KEYS.LanguageTitleCase, toTitle(largeImageKey))
-			.replace(REPLACE_KEYS.LanguageUpperCase, toUpper(largeImageKey))
+		const fileImageKey = resolveFileIcon(window.activeTextEditor.document);
+		const fileImageText = config[CONFIG_KEYS.LargeImage]
+			.replace(REPLACE_KEYS.LanguageLowerCase, toLower(fileImageKey))
+			.replace(REPLACE_KEYS.LanguageTitleCase, toTitle(fileImageKey))
+			.replace(REPLACE_KEYS.LanguageUpperCase, toUpper(fileImageKey))
 			.padEnd(2, FAKE_EMPTY);
 
 		state = {
@@ -225,11 +240,25 @@ export async function activity(previous: ActivityPayload = {}) {
 					),
 		};
 
-		state = {
-			...state,
-			largeImageKey,
-			largeImageText,
-		};
+		// Pick which one is the big image vs. the small corner badge, based on the
+		// extension's existing "Swap Big And Small Image" setting.
+		if (swapBigAndSmallImage) {
+			state = {
+				...state,
+				largeImageKey: activeBunnyKey,
+				largeImageText: activeBunnyText,
+				smallImageKey: fileImageKey,
+				smallImageText: fileImageText,
+			};
+		} else {
+			state = {
+				...state,
+				largeImageKey: fileImageKey,
+				largeImageText: fileImageText,
+				smallImageKey: activeBunnyKey,
+				smallImageText: activeBunnyText,
+			};
+		}
 
 		log(LogLevel.Trace, `VSCode language id: ${window.activeTextEditor.document.languageId}`);
 	}
