@@ -1,10 +1,8 @@
 import { basename, parse, sep } from 'node:path';
 import type { Selection, TextDocument, Diagnostic } from 'vscode';
-import { debug, env, window, workspace, languages, DiagnosticSeverity } from 'vscode';
+import { debug, window, workspace, languages, DiagnosticSeverity } from 'vscode';
 import {
 	CONFIG_KEYS,
-	CURSOR_IMAGE_KEY,
-	DEBUG_IMAGE_KEY,
 	EMPTY,
 	FAKE_EMPTY,
 	FILE_SIZES,
@@ -12,8 +10,6 @@ import {
 	REPLACE_KEYS,
 	UNKNOWN_GIT_BRANCH,
 	UNKNOWN_GIT_REPO_NAME,
-	VSCODE_IMAGE_KEY,
-	VSCODE_INSIDERS_IMAGE_KEY,
 } from './constants';
 import { log, LogLevel } from './logger';
 import { getConfig, getGit, pickRotatingImageKey, resolveFileIcon, toLower, toTitle, toUpper } from './util';
@@ -168,23 +164,12 @@ async function details(idling: CONFIG_KEYS, editing: CONFIG_KEYS, debugging: CON
 
 export async function activity(previous: ActivityPayload = {}) {
 	const config = getConfig();
-	const swapBigAndSmallImage = config[CONFIG_KEYS.SwapBigAndSmallImage];
 
-	const appName = env.appName;
-	const defaultSmallImageKeyBase = debug.activeDebugSession
-		? DEBUG_IMAGE_KEY
-		: appName.includes('Cursor')
-			? CURSOR_IMAGE_KEY
-			: appName.includes('Insiders')
-				? VSCODE_INSIDERS_IMAGE_KEY
-				: VSCODE_IMAGE_KEY;
-	// Same rotation treatment for the small badge (vscode-1, vscode-2, debug-1, ...).
-	const defaultSmallImageKey = pickRotatingImageKey(defaultSmallImageKeyBase);
-	const defaultSmallImageText = config[CONFIG_KEYS.SmallImage].replace(REPLACE_KEYS.AppName, appName);
-	const defaultLargeImageText = config[CONFIG_KEYS.LargeImageIdling];
-	// Idle now rotates through a pool of variants (idle-vscode-1, idle-vscode-2, ...)
-	// instead of always showing the same fixed idle image.
+	// Idle gets a rotating bunny pool (e.g. "idle-vscode-1", "idle-vscode-2", ...).
+	// This ONLY shows when no file is open. Once a file is open, the language icon takes over
+	// and no badge/overlay image is shown at all — just the single large image.
 	const idleImageKey = pickRotatingImageKey(IDLE_IMAGE_KEY);
+	const defaultLargeImageText = config[CONFIG_KEYS.LargeImageIdling];
 	const removeDetails = config[CONFIG_KEYS.RemoveDetails];
 	const removeLowerDetails = config[CONFIG_KEYS.RemoveLowerDetails];
 	const removeRemoteRepository = config[CONFIG_KEYS.RemoveRemoteRepository];
@@ -199,19 +184,7 @@ export async function activity(previous: ActivityPayload = {}) {
 		startTimestamp: config[CONFIG_KEYS.RemoveTimestamp] ? undefined : (previous.startTimestamp ?? Date.now()),
 		largeImageKey: idleImageKey,
 		largeImageText: defaultLargeImageText,
-		smallImageKey: defaultSmallImageKey,
-		smallImageText: defaultSmallImageText,
 	};
-
-	if (swapBigAndSmallImage) {
-		state = {
-			...state,
-			largeImageKey: defaultSmallImageKey,
-			largeImageText: defaultSmallImageText,
-			smallImageKey: idleImageKey,
-			smallImageText: defaultLargeImageText,
-		};
-	}
 
 	if (!removeRemoteRepository && git?.repositories.length) {
 		let repo = git.repositories.find((repo) => repo.ui.selected)?.state.remotes[0]?.fetchUrl;
@@ -252,19 +225,11 @@ export async function activity(previous: ActivityPayload = {}) {
 					),
 		};
 
-		if (swapBigAndSmallImage) {
-			state = {
-				...state,
-				smallImageKey: largeImageKey,
-				smallImageText: largeImageText,
-			};
-		} else {
-			state = {
-				...state,
-				largeImageKey,
-				largeImageText,
-			};
-		}
+		state = {
+			...state,
+			largeImageKey,
+			largeImageText,
+		};
 
 		log(LogLevel.Trace, `VSCode language id: ${window.activeTextEditor.document.languageId}`);
 	}
