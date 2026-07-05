@@ -31,12 +31,12 @@
 		"newLine": "lf",
 		"noEmitHelpers": true,
 		"outDir": "dist",
+		"rootDir": "./src",
 		"removeComments": false,
 		"sourceMap": true,
 
 		// Interop Constraints
 		"allowSyntheticDefaultImports": true,
-		"esModuleInterop": false,
 		"forceConsistentCasingInFileNames": true,
 		"isolatedModules": true,
 
