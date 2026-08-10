@@ -10,7 +10,7 @@ export const FAKE_EMPTY = '\u200B\u200B' as const;
 export const FILE_SIZES = [' bytes', 'KB', 'MB', 'GB', 'TB'] as const;
 
 export const IDLE_IMAGE_KEY = 'idle-vscode' as const;
-export const DEBUG_IMAGE_KEY = 'debug' as const;
+export const DEBUG_IMAGE_KEY = 'debugging' as const;
 export const VSCODE_IMAGE_KEY = 'vscode' as const;
 export const VSCODE_INSIDERS_IMAGE_KEY = 'vscode-insiders' as const;
 export const CURSOR_IMAGE_KEY = 'cursor' as const;
