@@ -14,6 +14,7 @@ type WorkspaceExtensionConfiguration = WorkspaceConfiguration & {
 	enabled: boolean;
 	idleTimeout: number;
 	largeImage: string;
+	useRotatingIcon: boolean;
 	largeImageIdling: string;
 	lowerDetailsDebugging: string;
 	lowerDetailsEditing: string;
@@ -44,7 +45,8 @@ export const toTitle = (str: string) => toLower(str).replace(/^\w/, (char) => to
  * Expects matching Discord Rich Presence assets to be uploaded for every variant
  * (vscode-1, vscode-2, vscode-3, ...) up to ROTATING_IMAGE_VARIANT_COUNT.
  */
-export function pickRotatingImageKey(baseKey: string) {
+export function pickRotatingImageKey(baseKey: string, useRotating: boolean) {
+	if (!useRotating) return baseKey;
 	const variant = Math.floor(Math.random() * ROTATING_IMAGE_VARIANT_COUNT) + 1;
 	return `${baseKey}-${variant}`;
 }

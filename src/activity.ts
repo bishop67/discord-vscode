@@ -179,11 +179,12 @@ export async function activity(previous: ActivityPayload = {}) {
 			: appName.includes('Insiders')
 				? VSCODE_INSIDERS_IMAGE_KEY
 				: VSCODE_IMAGE_KEY;
-	const activeBunnyKey = pickRotatingImageKey(activeBunnyKeyBase);
+	const useRotatingIcon = config[CONFIG_KEYS.UseRotatingIcon];
+	const activeBunnyKey = pickRotatingImageKey(activeBunnyKeyBase, useRotatingIcon);
 	const activeBunnyText = config[CONFIG_KEYS.SmallImage].replace(REPLACE_KEYS.AppName, appName);
 	// Idle gets its own rotating bunny pool (e.g. "idle-vscode-1", "idle-vscode-2", ...).
 	// While idling there's no file icon to pair it with, so this shows alone.
-	const idleImageKey = pickRotatingImageKey(IDLE_IMAGE_KEY);
+	const idleImageKey = pickRotatingImageKey(IDLE_IMAGE_KEY, useRotatingIcon);
 	const defaultLargeImageText = config[CONFIG_KEYS.LargeImageIdling];
 	const removeDetails = config[CONFIG_KEYS.RemoveDetails];
 	const removeLowerDetails = config[CONFIG_KEYS.RemoveLowerDetails];
