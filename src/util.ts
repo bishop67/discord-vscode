@@ -14,7 +14,6 @@ type WorkspaceExtensionConfiguration = WorkspaceConfiguration & {
 	enabled: boolean;
 	idleTimeout: number;
 	largeImage: string;
-	useRotatingIcon: boolean;
 	largeImageIdling: string;
 	lowerDetailsDebugging: string;
 	lowerDetailsEditing: string;
@@ -27,6 +26,7 @@ type WorkspaceExtensionConfiguration = WorkspaceConfiguration & {
 	smallImage: string;
 	suppressNotifications: boolean;
 	swapBigAndSmallImage: boolean;
+	useRotatingIcon: boolean;
 	workspaceExcludePatterns: string[];
 };
 
