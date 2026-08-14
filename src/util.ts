@@ -1,4 +1,5 @@
 import { basename } from 'node:path';
+import { URL } from 'node:url';
 import type { TextDocument, WorkspaceConfiguration } from 'vscode';
 import { workspace, extensions } from 'vscode';
 import type { API, GitExtension } from './@types/git';

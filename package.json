@@ -172,7 +172,10 @@
 					},
 					"discord.appIcon": {
 						"type": "string",
-						"enum": ["flower", "universal"],
+						"enum": [
+							"flower",
+							"universal"
+						],
 						"enumDescriptions": [
 							"Use the default flower icon next to the app name",
 							"Use a generic icon instead of the flower"

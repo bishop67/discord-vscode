@@ -5,8 +5,10 @@ import LANG from './data/languages.json';
 // status update like the large/small images can. To offer a toggle, we log
 // into one of two separate Discord applications depending on the user's
 // choice: the default one (flower icon) or a second one with a generic icon.
-// TODO: replace this with the Client ID of a second Discord application
-// (Developer Portal -> New Application -> upload a generic/universal icon).
+// NOTE: the value below is a placeholder. Before enabling the "universal"
+// option, create a second Discord application (Developer Portal -> New
+// Application -> upload a generic/universal icon) and paste its real Client
+// ID here in place of the placeholder string.
 export const CLIENT_ID_FLOWER = '1486667060447805561' as const;
 export const CLIENT_ID_UNIVERSAL = 'REPLACE_WITH_YOUR_SECOND_APP_CLIENT_ID' as const;
 
