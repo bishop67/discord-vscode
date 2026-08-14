@@ -1,6 +1,14 @@
 import LANG from './data/languages.json';
 
-export const CLIENT_ID = '1486667060447805561' as const;
+// The little icon shown next to the app name in the Rich Presence card is tied
+// to the Discord application (Client ID) itself - it can't be swapped per
+// status update like the large/small images can. To offer a toggle, we log
+// into one of two separate Discord applications depending on the user's
+// choice: the default one (flower icon) or a second one with a generic icon.
+// TODO: replace this with the Client ID of a second Discord application
+// (Developer Portal -> New Application -> upload a generic/universal icon).
+export const CLIENT_ID_FLOWER = '1486667060447805561' as const;
+export const CLIENT_ID_UNIVERSAL = 'REPLACE_WITH_YOUR_SECOND_APP_CLIENT_ID' as const;
 
 export const KNOWN_EXTENSIONS: { [key: string]: { image: string } } = LANG.KNOWN_EXTENSIONS;
 export const KNOWN_LANGUAGES: { image: string; language: string }[] = LANG.KNOWN_LANGUAGES;
@@ -48,6 +56,9 @@ export const enum REPLACE_KEYS {
 }
 
 export const enum CONFIG_KEYS {
+	AppIcon = 'appIcon',
+	CustomLargeImage = 'customLargeImage',
+	CustomSmallImage = 'customSmallImage',
 	DetailsDebugging = 'detailsDebugging',
 	DetailsEditing = 'detailsEditing',
 	DetailsIdling = 'detailsIdling',

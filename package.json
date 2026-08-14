@@ -170,6 +170,26 @@
 						"default": "{app_name}",
 						"description": "Custom string for the smallImageText section of the rich presence\n\t- '{app_name}' will get replaced with the current Visual Studio Code version."
 					},
+					"discord.appIcon": {
+						"type": "string",
+						"enum": ["flower", "universal"],
+						"enumDescriptions": [
+							"Use the default flower icon next to the app name",
+							"Use a generic icon instead of the flower"
+						],
+						"default": "flower",
+						"description": "Which icon shows next to the app name in your Rich Presence card. Unlike the large/small images, this can't be a custom URL - it's tied to which Discord application the extension connects as."
+					},
+					"discord.customLargeImage": {
+						"type": "string",
+						"default": "",
+						"description": "Overrides the large image with your own picture. Paste a direct link to an image (ending in .png, .jpg, .gif, .webp, or .avif) - no Discord Developer Portal upload needed. Leave empty to use the default language icon."
+					},
+					"discord.customSmallImage": {
+						"type": "string",
+						"default": "",
+						"description": "Overrides the small corner image with your own picture. Paste a direct link to an image (ending in .png, .jpg, .gif, .webp, or .avif) - no Discord Developer Portal upload needed. Leave empty to use the default badge."
+					},
 					"discord.suppressNotifications": {
 						"type": "boolean",
 						"default": false,

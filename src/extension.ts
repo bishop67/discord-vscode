@@ -3,14 +3,18 @@ import throttle from 'lodash-es/throttle';
 import type { ExtensionContext, StatusBarItem } from 'vscode';
 import { commands, StatusBarAlignment, window, workspace, debug } from 'vscode';
 import { activity } from './activity';
-import { CLIENT_ID, CONFIG_KEYS } from './constants';
+import { CLIENT_ID_FLOWER, CLIENT_ID_UNIVERSAL, CONFIG_KEYS } from './constants';
 import { log, LogLevel } from './logger';
 import { getConfig, getGit } from './util';
+
+function resolveClientId() {
+	return getConfig()[CONFIG_KEYS.AppIcon] === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER;
+}
 
 const statusBarIcon: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left);
 statusBarIcon.text = '$(pulse) Connecting to Discord...';
 
-let rpc = new Client({ transport: { type: 'ipc' }, clientId: CLIENT_ID });
+let rpc = new Client({ transport: { type: 'ipc' }, clientId: resolveClientId() });
 const config = getConfig();
 
 let state = {};
@@ -32,7 +36,7 @@ async function sendActivity() {
 
 async function login() {
 	log(LogLevel.Info, 'Creating discord-rpc client');
-	rpc = new Client({ transport: { type: 'ipc' }, clientId: CLIENT_ID });
+	rpc = new Client({ transport: { type: 'ipc' }, clientId: resolveClientId() });
 
 	rpc.on('ready', () => {
 		log(LogLevel.Info, 'Successfully connected to Discord');

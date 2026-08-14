@@ -16,7 +16,16 @@ import {
 	VSCODE_INSIDERS_IMAGE_KEY,
 } from './constants';
 import { log, LogLevel } from './logger';
-import { getConfig, getGit, pickRotatingImageKey, resolveFileIcon, toLower, toTitle, toUpper } from './util';
+import {
+	getConfig,
+	getGit,
+	pickRotatingImageKey,
+	resolveCustomImage,
+	resolveFileIcon,
+	toLower,
+	toTitle,
+	toUpper,
+} from './util';
 
 interface ActivityPayload {
 	buttons?: { label: string; url: string }[] | undefined;
@@ -198,7 +207,8 @@ export async function activity(previous: ActivityPayload = {}) {
 			? undefined
 			: await details(CONFIG_KEYS.DetailsIdling, CONFIG_KEYS.DetailsEditing, CONFIG_KEYS.DetailsDebugging),
 		startTimestamp: config[CONFIG_KEYS.RemoveTimestamp] ? undefined : (previous.startTimestamp ?? Date.now()),
-		largeImageKey: idleImageKey,
+		// discord.customLargeImage always wins over the built-in idle badge.
+		largeImageKey: resolveCustomImage(config[CONFIG_KEYS.CustomLargeImage]) ?? idleImageKey,
 		largeImageText: defaultLargeImageText,
 	};
 
@@ -242,21 +252,26 @@ export async function activity(previous: ActivityPayload = {}) {
 		};
 
 		// Pick which one is the big image vs. the small corner badge, based on the
-		// extension's existing "Swap Big And Small Image" setting.
+		// extension's existing "Swap Big And Small Image" setting. Whatever is set
+		// in discord.customLargeImage / discord.customSmallImage takes priority
+		// over both the language icon and the app badge in that slot.
+		const customLargeImage = resolveCustomImage(config[CONFIG_KEYS.CustomLargeImage]);
+		const customSmallImage = resolveCustomImage(config[CONFIG_KEYS.CustomSmallImage]);
+
 		if (swapBigAndSmallImage) {
 			state = {
 				...state,
-				largeImageKey: activeBunnyKey,
+				largeImageKey: customLargeImage ?? activeBunnyKey,
 				largeImageText: activeBunnyText,
-				smallImageKey: fileImageKey,
+				smallImageKey: customSmallImage ?? fileImageKey,
 				smallImageText: fileImageText,
 			};
 		} else {
 			state = {
 				...state,
-				largeImageKey: fileImageKey,
+				largeImageKey: customLargeImage ?? fileImageKey,
 				largeImageText: fileImageText,
-				smallImageKey: activeBunnyKey,
+				smallImageKey: customSmallImage ?? activeBunnyKey,
 				smallImageText: activeBunnyText,
 			};
 		}

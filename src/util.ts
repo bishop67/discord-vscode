@@ -8,6 +8,9 @@ import { log, LogLevel } from './logger';
 let git: API | null | undefined;
 
 type WorkspaceExtensionConfiguration = WorkspaceConfiguration & {
+	appIcon: 'flower' | 'universal';
+	customLargeImage: string;
+	customSmallImage: string;
 	detailsDebugging: string;
 	detailsEditing: string;
 	detailsIdling: string;
@@ -39,6 +42,28 @@ export const toLower = (str: string) => str.toLocaleLowerCase();
 export const toUpper = (str: string) => str.toLocaleUpperCase();
 
 export const toTitle = (str: string) => toLower(str).replace(/^\w/, (char) => toUpper(char));
+
+/**
+ * Discord's RPC accepts a direct https URL in place of a pre-uploaded asset
+ * key for largeImageKey/smallImageKey - see the "external URL" support of
+ * setActivity. This lets a user drop any image link into the
+ * discord.customLargeImage / discord.customSmallImage settings without ever
+ * touching the Discord Developer Portal. Blank or clearly-invalid values
+ * fall back to undefined so the extension's own icon is used instead.
+ */
+export function resolveCustomImage(value: string | undefined): string | undefined {
+	if (!value) return undefined;
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+
+	try {
+		const url = new URL(trimmed);
+		if (url.protocol !== 'https:' && url.protocol !== 'http:') return undefined;
+		return /\.(?:png|jpe?g|gif|webp|avif)$/i.test(url.pathname) ? trimmed : undefined;
+	} catch {
+		return undefined;
+	}
+}
 
 /**
  * Picks a random rotating variant of a base image key, e.g. "vscode" -> "vscode-2".
