@@ -5,12 +5,11 @@ import LANG from './data/languages.json';
 // status update like the large/small images can. To offer a toggle, we log
 // into one of two separate Discord applications depending on the user's
 // choice: the default one (flower icon) or a second one with a generic icon.
-// NOTE: the value below is a placeholder. Before enabling the "universal"
-// option, create a second Discord application (Developer Portal -> New
-// Application -> upload a generic/universal icon) and paste its real Client
-// ID here in place of the placeholder string.
+// NOTE: Rich Presence assets are per-application, so every image key used below -
+// including each rotating variant - has to be uploaded to BOTH applications. An asset
+// present in one but not the other renders as no image at all under that app icon.
 export const CLIENT_ID_FLOWER = '1486667060447805561' as const;
-export const CLIENT_ID_UNIVERSAL = 'REPLACE_WITH_YOUR_SECOND_APP_CLIENT_ID' as const;
+export const CLIENT_ID_UNIVERSAL = '1539164834556551178' as const;
 
 export const KNOWN_EXTENSIONS: { [key: string]: { image: string } } = LANG.KNOWN_EXTENSIONS;
 export const KNOWN_LANGUAGES: { image: string; language: string }[] = LANG.KNOWN_LANGUAGES;
@@ -26,11 +25,37 @@ export const VSCODE_INSIDERS_IMAGE_KEY = 'vscode-insiders' as const;
 export const CURSOR_IMAGE_KEY = 'cursor' as const;
 
 /**
- * How many rotating image variants exist per situation (idle, active, debugging, etc).
- * Each base key (e.g. "vscode") is expected to have this many uploaded Discord assets
- * named "vscode-1", "vscode-2", "vscode-3", ...
+ * How many rotating variants actually exist for each base image key, i.e. how many
+ * "<base>-1", "<base>-2", ... assets are uploaded to the Discord application.
+ *
+ * A base key that is missing here, or listed with fewer than 2 variants, never rotates -
+ * the plain base key is used instead. That fallback matters: asking Discord for an asset
+ * that was never uploaded makes it render *no image at all* rather than degrading to the
+ * base icon, which is how "cursor-1" and "vscode-insiders-1" silently blanked the badge.
+ *
+ * Keep this in sync with assets/icons/ when adding or removing variants.
  */
-export const ROTATING_IMAGE_VARIANT_COUNT = 3 as const;
+export const ROTATING_IMAGE_VARIANT_COUNTS: Readonly<Record<string, number>> = {
+	[IDLE_IMAGE_KEY]: 3,
+	[DEBUG_IMAGE_KEY]: 3,
+	[VSCODE_IMAGE_KEY]: 3,
+	// No "-1"/"-2"/"-3" assets exist for these two yet, so they stay static.
+	[VSCODE_INSIDERS_IMAGE_KEY]: 0,
+	[CURSOR_IMAGE_KEY]: 0,
+};
+
+/**
+ * How long a rotating icon stays on screen before the next variant is shown. Discord
+ * rate-limits presence updates to roughly 5 per 20 seconds, so this has to stay well
+ * above that floor.
+ */
+export const ROTATION_INTERVAL_SECONDS = 30 as const;
+
+/**
+ * Minimum gap between two setActivity calls. Updates requested inside this window are
+ * coalesced into one trailing update instead of being silently dropped by Discord.
+ */
+export const MIN_ACTIVITY_INTERVAL_MS = 4_000 as const;
 
 export const UNKNOWN_GIT_BRANCH = 'Unknown' as const;
 export const UNKNOWN_GIT_REPO_NAME = 'Unknown' as const;

@@ -3,9 +3,15 @@ import throttle from 'lodash-es/throttle';
 import type { ExtensionContext, StatusBarItem } from 'vscode';
 import { commands, StatusBarAlignment, window, workspace, debug } from 'vscode';
 import { activity } from './activity';
-import { CLIENT_ID_FLOWER, CLIENT_ID_UNIVERSAL, CONFIG_KEYS } from './constants';
+import {
+	CLIENT_ID_FLOWER,
+	CLIENT_ID_UNIVERSAL,
+	CONFIG_KEYS,
+	MIN_ACTIVITY_INTERVAL_MS,
+	ROTATION_INTERVAL_SECONDS,
+} from './constants';
 import { log, LogLevel } from './logger';
-import { getConfig, getGit } from './util';
+import { advanceRotation, getConfig, getGit } from './util';
 
 function resolveClientId() {
 	return getConfig()[CONFIG_KEYS.AppIcon] === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER;
@@ -15,23 +21,78 @@ const statusBarIcon: StatusBarItem = window.createStatusBarItem(StatusBarAlignme
 statusBarIcon.text = '$(pulse) Connecting to Discord...';
 
 let rpc = new Client({ transport: { type: 'ipc' }, clientId: resolveClientId() });
-const config = getConfig();
 
 let state = {};
 let idle: NodeJS.Timeout | undefined;
+let rotation: NodeJS.Timeout | undefined;
+let pendingActivity: NodeJS.Timeout | undefined;
+let lastActivityAt = 0;
 let listeners: { dispose(): any }[] = [];
+
+function stopRotation() {
+	if (rotation) {
+		// eslint-disable-next-line no-restricted-globals
+		clearInterval(rotation);
+		rotation = undefined;
+	}
+}
 
 export function cleanUp() {
 	for (const listener of listeners) listener.dispose();
 	listeners = [];
+
+	stopRotation();
+
+	if (pendingActivity) {
+		// eslint-disable-next-line no-restricted-globals
+		clearTimeout(pendingActivity);
+		pendingActivity = undefined;
+	}
 }
 
+/**
+ * Discord drops presence updates past roughly 5 per 20 seconds. Editor switches plus the
+ * 2s edit throttle exceed that easily, and the dropped updates used to leave the presence
+ * stuck on a stale icon. Anything requested inside the cooldown is collapsed into a single
+ * trailing update instead, so the latest state always lands.
+ */
 async function sendActivity() {
+	const waitFor = MIN_ACTIVITY_INTERVAL_MS - (Date.now() - lastActivityAt);
+
+	if (waitFor > 0) {
+		// eslint-disable-next-line no-restricted-globals
+		pendingActivity ??= setTimeout(() => {
+			pendingActivity = undefined;
+			void sendActivity();
+		}, waitFor);
+
+		return;
+	}
+
+	lastActivityAt = Date.now();
 	// eslint-disable-next-line require-atomic-updates
 	state = {
 		...(await activity(state)),
 	};
 	void rpc.user?.setActivity(state);
+}
+
+/**
+ * Rotation runs on its own timer so the icon advances at a steady cadence whether or not
+ * you happen to be typing. Picking a new variant inside each presence update instead made
+ * it flicker mid-keystroke and stop dead as soon as you paused.
+ */
+function startRotation() {
+	stopRotation();
+
+	const config = getConfig();
+	if (!config[CONFIG_KEYS.Enabled] || !config[CONFIG_KEYS.UseRotatingIcon]) return;
+
+	// eslint-disable-next-line no-restricted-globals
+	rotation = setInterval(() => {
+		advanceRotation();
+		void sendActivity();
+	}, ROTATION_INTERVAL_SECONDS * 1_000);
 }
 
 async function login() {
@@ -46,12 +107,21 @@ async function login() {
 		statusBarIcon.tooltip = 'Connected to Discord';
 
 		void sendActivity();
-		const onChangeActiveTextEditor = window.onDidChangeActiveTextEditor(async () => sendActivity());
-		const onChangeTextDocument = workspace.onDidChangeTextDocument(throttle(async () => sendActivity(), 2_000));
-		const onStartDebugSession = debug.onDidStartDebugSession(async () => sendActivity());
-		const onTerminateDebugSession = debug.onDidTerminateDebugSession(async () => sendActivity());
+		startRotation();
 
-		listeners.push(onChangeActiveTextEditor, onChangeTextDocument, onStartDebugSession, onTerminateDebugSession);
+		const throttledSendActivity = throttle(() => void sendActivity(), 2_000);
+		const onChangeActiveTextEditor = window.onDidChangeActiveTextEditor(() => void sendActivity());
+		const onChangeTextDocument = workspace.onDidChangeTextDocument((event) => {
+			// Output panels, logs and other background documents fire this too - only edits to
+			// the file actually on screen should refresh the presence.
+			if (event.document === window.activeTextEditor?.document) throttledSendActivity();
+		});
+		const onStartDebugSession = debug.onDidStartDebugSession(() => void sendActivity());
+		const onTerminateDebugSession = debug.onDidTerminateDebugSession(() => void sendActivity());
+
+		listeners.push(onChangeActiveTextEditor, onChangeTextDocument, onStartDebugSession, onTerminateDebugSession, {
+			dispose: () => throttledSendActivity.cancel(),
+		});
 	});
 
 	rpc.on('disconnected', () => {
@@ -67,7 +137,7 @@ async function login() {
 		log(LogLevel.Error, `Encountered following error while trying to login:\n${error as string}`);
 		cleanUp();
 		void rpc.destroy();
-		if (!config[CONFIG_KEYS.SuppressNotifications]) {
+		if (!getConfig()[CONFIG_KEYS.SuppressNotifications]) {
 			// @ts-expect-error: error is not typed
 			if (error?.message?.includes('ENOENT')) void window.showErrorMessage('No Discord client detected');
 			else void window.showErrorMessage(`Couldn't connect to Discord via RPC: ${error as string}`);
@@ -82,7 +152,7 @@ export async function activate(context: ExtensionContext) {
 	log(LogLevel.Info, 'Discord Presence activated');
 
 	let isWorkspaceExcluded = false;
-	for (const pattern of config[CONFIG_KEYS.WorkspaceExcludePatterns]) {
+	for (const pattern of getConfig()[CONFIG_KEYS.WorkspaceExcludePatterns]) {
 		const regex = new RegExp(pattern);
 		const folders = workspace.workspaceFolders;
 		if (!folders) break;
@@ -95,7 +165,7 @@ export async function activate(context: ExtensionContext) {
 	const enable = async (update = true) => {
 		if (update) {
 			try {
-				await config.update('enabled', true);
+				await getConfig().update('enabled', true);
 			} catch {}
 		}
 
@@ -110,7 +180,7 @@ export async function activate(context: ExtensionContext) {
 	const disable = async (update = true) => {
 		if (update) {
 			try {
-				await config.update('enabled', false);
+				await getConfig().update('enabled', false);
 			} catch {}
 		}
 
@@ -144,36 +214,76 @@ export async function activate(context: ExtensionContext) {
 		statusBarIcon.show();
 	});
 
-	context.subscriptions.push(enabler, disabler, reconnecter, disconnect);
+	// Settings used to be read once at module load, so changing any of them needed a full
+	// window reload to take effect. They are read live now, and this keeps the two things
+	// that are not re-read per update - the connection and the rotation timer - in sync.
+	const configWatcher = workspace.onDidChangeConfiguration(async (event) => {
+		if (!event.affectsConfiguration('discord')) return;
 
-	if (!isWorkspaceExcluded && config[CONFIG_KEYS.Enabled]) {
+		if (event.affectsConfiguration('discord.enabled')) {
+			if (getConfig()[CONFIG_KEYS.Enabled]) await enable(false);
+			else await disable(false);
+			return;
+		}
+
+		if (!getConfig()[CONFIG_KEYS.Enabled]) return;
+
+		// The Rich Presence app icon belongs to the Discord application itself rather than to
+		// the activity payload, so switching it means logging into the other application.
+		if (event.affectsConfiguration('discord.appIcon')) {
+			await disable(false);
+			await enable(false);
+			return;
+		}
+
+		if (event.affectsConfiguration('discord.useRotatingIcon')) startRotation();
+
+		await sendActivity();
+	});
+
+	const windowStateWatcher = window.onDidChangeWindowState(async (windowState) => {
+		const idleTimeout = getConfig()[CONFIG_KEYS.IdleTimeout];
+		if (idleTimeout === 0) return;
+
+		if (windowState.focused) {
+			if (idle) {
+				// eslint-disable-next-line no-restricted-globals
+				clearTimeout(idle);
+				idle = undefined;
+			}
+
+			startRotation();
+			await sendActivity();
+		} else {
+			// eslint-disable-next-line no-restricted-globals
+			idle = setTimeout(async () => {
+				idle = undefined;
+				// Nothing to rotate once the presence has been cleared.
+				stopRotation();
+				state = {};
+				await rpc.user?.clearActivity();
+			}, idleTimeout * 1_000);
+		}
+	});
+
+	context.subscriptions.push(enabler, disabler, reconnecter, disconnect, configWatcher, windowStateWatcher);
+
+	if (!isWorkspaceExcluded && getConfig()[CONFIG_KEYS.Enabled]) {
 		statusBarIcon.show();
 		await login();
 	}
-
-	window.onDidChangeWindowState(async (windowState) => {
-		if (config[CONFIG_KEYS.IdleTimeout] !== 0) {
-			if (windowState.focused) {
-				if (idle) {
-					// eslint-disable-next-line no-restricted-globals
-					clearTimeout(idle);
-				}
-
-				await sendActivity();
-			} else {
-				// eslint-disable-next-line no-restricted-globals
-				idle = setTimeout(async () => {
-					state = {};
-					await rpc.user?.clearActivity();
-				}, config[CONFIG_KEYS.IdleTimeout] * 1_000);
-			}
-		}
-	});
 
 	await getGit();
 }
 
 export function deactivate() {
 	cleanUp();
+
+	if (idle) {
+		// eslint-disable-next-line no-restricted-globals
+		clearTimeout(idle);
+		idle = undefined;
+	}
+
 	void rpc.destroy();
 }

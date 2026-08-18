@@ -19,7 +19,9 @@ import { log, LogLevel } from './logger';
 import {
 	getConfig,
 	getGit,
+	normalizeRemoteUrl,
 	pickRotatingImageKey,
+	repoNameFromRemote,
 	resolveCustomImage,
 	resolveFileIcon,
 	toLower,
@@ -107,13 +109,8 @@ async function fileDetails(_raw: string, document: TextDocument, selection: Sele
 
 	if (raw.includes(REPLACE_KEYS.GitRepoName)) {
 		if (git?.repositories.length) {
-			raw = raw.replace(
-				REPLACE_KEYS.GitRepoName,
-				git.repositories
-					?.find((repo) => repo.ui.selected)
-					?.state.remotes[0]?.fetchUrl?.split('/')[1]
-					?.replace('.git', '') ?? FAKE_EMPTY,
-			);
+			const remote = git.repositories.find((repo) => repo.ui.selected)?.state.remotes[0]?.fetchUrl;
+			raw = raw.replace(REPLACE_KEYS.GitRepoName, (remote ? repoNameFromRemote(remote) : undefined) ?? FAKE_EMPTY);
 		} else {
 			raw = raw.replace(REPLACE_KEYS.GitRepoName, UNKNOWN_GIT_REPO_NAME);
 		}
@@ -180,7 +177,8 @@ export async function activity(previous: ActivityPayload = {}) {
 	const swapBigAndSmallImage = config[CONFIG_KEYS.SwapBigAndSmallImage];
 
 	const appName = env.appName;
-	// Bunny badge shown alongside the file icon while editing (rotates each update).
+	// Bunny badge shown alongside the file icon while editing. Which variant is showing is
+	// decided by the shared rotation tick, advanced on a timer rather than per update.
 	const activeBunnyKeyBase = debug.activeDebugSession
 		? DEBUG_IMAGE_KEY
 		: appName.includes('Cursor')
@@ -213,15 +211,10 @@ export async function activity(previous: ActivityPayload = {}) {
 	};
 
 	if (!removeRemoteRepository && git?.repositories.length) {
-		let repo = git.repositories.find((repo) => repo.ui.selected)?.state.remotes[0]?.fetchUrl;
+		const remote = git.repositories.find((repo) => repo.ui.selected)?.state.remotes[0]?.fetchUrl;
+		const repo = remote ? normalizeRemoteUrl(remote) : undefined;
 
 		if (repo) {
-			if (repo.startsWith('git@') || repo.startsWith('ssh://')) {
-				repo = repo.replace('ssh://', '').replace(':', '/').replace('git@', 'https://').replace('.git', '');
-			} else {
-				repo = repo.replace(/(https:\/\/)([^@]*)@(.*?$)/, '$1$3').replace('.git', '');
-			}
-
 			state = {
 				...state,
 				buttons: [{ label: 'View Repository', url: repo }],
@@ -237,11 +230,10 @@ export async function activity(previous: ActivityPayload = {}) {
 			.replace(REPLACE_KEYS.LanguageUpperCase, toUpper(fileImageKey))
 			.padEnd(2, FAKE_EMPTY);
 
+		// `details` is already on `state` from the same call above - recomputing it here cost a
+		// second workspace.fs.stat and git lookup on every keystroke batch for an identical result.
 		state = {
 			...state,
-			details: removeDetails
-				? undefined
-				: await details(CONFIG_KEYS.DetailsIdling, CONFIG_KEYS.DetailsEditing, CONFIG_KEYS.DetailsDebugging),
 			state: removeLowerDetails
 				? undefined
 				: await details(
