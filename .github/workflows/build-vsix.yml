@@ -8,7 +8,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # needed to create/update the GitHub Release
+  contents: write # needed to create/update the GitHub Release and move the tag
+
+# Two pushes landing close together would otherwise race to move the same tag and
+# upload the same asset names.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -16,29 +22,59 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        uses: ./.github/pnpmCache
+
+      # esbuild strips types without checking them, so without this a type error would
+      # still package cleanly and ship straight to the release.
+      - name: Typecheck
+        run: pnpm run build:check
 
       - name: Build extension bundle
         run: node esbuild.mjs
 
       - name: Package .vsix
-        run: npx vsce package --no-dependencies
+        run: pnpm exec vsce package --no-dependencies
 
       - name: Find the built .vsix
         id: find_vsix
         run: |
-          FILE=$(ls *.vsix | head -n 1)
-          echo "vsix_path=$FILE" >> "$GITHUB_OUTPUT"
+          shopt -s nullglob
+          files=(*.vsix)
+          if [ ${#files[@]} -ne 1 ]; then
+            echo "Expected exactly one .vsix, found ${#files[@]}: ${files[*]}" >&2
+            exit 1
+          fi
+          echo "vsix_path=${files[0]}" >> "$GITHUB_OUTPUT"
+
+      # action-gh-release only creates a tag when it does not already exist, so once
+      # "latest" existed it stayed pinned to the commit that first created it. The body
+      # and the .vsix kept updating while the tag - and with it the auto-generated
+      # Source code archives and the release date - stayed frozen at that old commit.
+      - name: Move the "latest" tag to this commit
+        run: |
+          git tag -f latest "$GITHUB_SHA"
+          git push -f origin refs/tags/latest
+
+      # Asset filenames carry the version, so a version bump would otherwise leave the
+      # previous build's .vsix sitting next to the new one forever.
+      - name: Remove stale release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view latest >/dev/null 2>&1; then
+            gh release view latest --json assets --jq '.assets[].name' | while read -r asset; do
+              [ -n "$asset" ] && gh release delete-asset latest "$asset" --yes
+            done
+          fi
 
       - name: Publish/update "latest" release
         uses: softprops/action-gh-release@v2
@@ -56,3 +92,4 @@ jobs:
             ```
           prerelease: true
           files: ${{ steps.find_vsix.outputs.vsix_path }}
+          fail_on_unmatched_files: true
