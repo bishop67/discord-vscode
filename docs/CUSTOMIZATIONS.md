@@ -20,13 +20,30 @@ This is a personal fork of [iCrawl/discord-vscode](https://github.com/iCrawl/dis
 
 The original extension shows one fixed image per situation — always the same "vscode" logo badge, always the same "idle-vscode" image when idle.
 
-This fork adds a rotation system (`pickRotatingImageKey()` in `util.ts`): each situation now has a **pool of images**, and one is picked at random every time the status updates:
+This fork adds a rotation system (`pickRotatingImageKey()` in `util.ts`): each situation now has a **pool of images**, and the pool advances one step every 30 seconds on its own timer:
 
-- **Idling** (no file open): random pick from a 3-image pool
-- **Editing a file**: language icon (unchanged) + a random pick from a 3-image "active" pool, shown together
-- **Debugging**: random pick from its own 3-image pool
+- **Idling** (no file open): cycles a 3-image pool
+- **Editing a file**: language icon (unchanged) + a cycling 3-image "active" pool, shown together
+- **Debugging**: cycles its own 3-image pool
+
+Rotation is driven by a shared tick rather than a random draw per status update, so every image in one update advances together, each variant gets equal screen time, and the icon keeps moving whether or not you happen to be typing. Base keys with no uploaded variants (currently `cursor` and `vscode-insiders`) stay on their single static image, because asking Discord for an asset that was never uploaded makes it render no image at all.
 
 This is entirely new code — nothing like it exists in the original project.
+
+## New feature: user-supplied images
+
+The rotating pools above resolve to asset keys that live inside this fork's Discord Application, so only its owner can change them. To let anyone use their own artwork without touching the Discord Developer Portal, this fork also accepts plain image URLs, which Discord's RPC supports directly:
+
+| Setting                            | Effect                                                          |
+| ---------------------------------- | --------------------------------------------------------------- |
+| `discord.customLargeImage`         | One image URL for the large card image                          |
+| `discord.customSmallImage`         | One image URL for the small corner badge                        |
+| `discord.customLargeImageRotation` | A list of image URLs, cycled in the large slot every 30 seconds |
+| `discord.customSmallImageRotation` | A list of image URLs, cycled in the small slot every 30 seconds |
+
+Precedence per slot is **rotation list → single custom image → built-in key**. Supplying two or more URLs is itself the opt-in to cycle them, so the rotation lists work independently of `discord.useRotatingIcon`, which only governs the bundled pools. Custom images share the same tick as the bundled ones, so everything advances in step.
+
+URLs must be `http(s)` and end in `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, or `.avif` (query strings are fine). Entries that do not qualify are skipped rather than blanking the slot, and each bad value is reported once in the **Discord Presence** output channel — previously an unusable URL was dropped silently and looked identical to having set nothing at all.
 
 ## Preserved from the original (unchanged)
 
@@ -51,6 +68,7 @@ The original project has no automated `.vsix` distribution outside the official 
 | Core Rich Presence functionality              | Unchanged                              |
 | Language icon detection                       | Unchanged                              |
 | Visual identity (icon, images, app ownership) | Fully customized                       |
-| Status image behavior                         | New: random rotation per situation     |
+| Status image behavior                         | New: timed rotation per situation      |
+| User-supplied images                          | New: single or rotating image URLs     |
 | CI health                                     | Improved (pre-existing bug fixed)      |
 | Distribution                                  | New: automated GitHub Release pipeline |

@@ -11,7 +11,9 @@ let git: API | null | undefined;
 type WorkspaceExtensionConfiguration = WorkspaceConfiguration & {
 	appIcon: 'flower' | 'universal';
 	customLargeImage: string;
+	customLargeImageRotation: string[];
 	customSmallImage: string;
+	customSmallImageRotation: string[];
 	detailsDebugging: string;
 	detailsEditing: string;
 	detailsIdling: string;
@@ -52,6 +54,24 @@ export const toTitle = (str: string) => toLower(str).replace(/^\w/, (char) => to
  * touching the Discord Developer Portal. Blank or clearly-invalid values
  * fall back to undefined so the extension's own icon is used instead.
  */
+const warnedImageValues = new Set<string>();
+
+/**
+ * Complains about a value the user clearly meant as an image, once per distinct value.
+ * These are checked on every presence update, so warning unconditionally would flood the
+ * output channel - but staying silent left a typo'd URL looking identical to no setting
+ * at all, with the slot just falling back to the default icon and no way to tell why.
+ */
+function warnUnusableImage(value: string) {
+	if (warnedImageValues.has(value)) return;
+
+	warnedImageValues.add(value);
+	log(
+		LogLevel.Warn,
+		`Ignoring custom image "${value}": it has to be an http(s) URL whose path ends in .png, .jpg, .jpeg, .gif, .webp or .avif`,
+	);
+}
+
 export function resolveCustomImage(value: string | undefined): string | undefined {
 	if (!value) return undefined;
 	const trimmed = value.trim();
@@ -59,11 +79,30 @@ export function resolveCustomImage(value: string | undefined): string | undefine
 
 	try {
 		const url = new URL(trimmed);
-		if (url.protocol !== 'https:' && url.protocol !== 'http:') return undefined;
-		return /\.(?:png|jpe?g|gif|webp|avif)$/i.test(url.pathname) ? trimmed : undefined;
+		if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+			warnUnusableImage(trimmed);
+			return undefined;
+		}
+
+		if (!/\.(?:png|jpe?g|gif|webp|avif)$/i.test(url.pathname)) {
+			warnUnusableImage(trimmed);
+			return undefined;
+		}
+
+		return trimmed;
 	} catch {
+		warnUnusableImage(trimmed);
 		return undefined;
 	}
+}
+
+/**
+ * The entries of a user's rotation list that are actually usable, in order.
+ */
+export function usableCustomImages(values: readonly string[] | undefined): string[] {
+	if (!values?.length) return [];
+
+	return values.map((value) => resolveCustomImage(value)).filter((value): value is string => value !== undefined);
 }
 
 let rotationTick = 0;
@@ -93,6 +132,30 @@ export function pickRotatingImageKey(baseKey: string, useRotating: boolean) {
 	if (variantCount < 2) return baseKey;
 
 	return `${baseKey}-${(rotationTick % variantCount) + 1}`;
+}
+
+/**
+ * Picks the current entry of a user-supplied rotation list. Shares the tick used by the
+ * built-in variants so every image in one presence update advances together, and so a
+ * user's own images rotate at the same steady cadence rather than per keystroke.
+ *
+ * Unlike the built-in variants these are plain URLs, so nothing needs uploading to the
+ * Discord application and any user can supply their own set.
+ */
+export function pickRotatingCustomImage(values: readonly string[] | undefined): string | undefined {
+	const usable = usableCustomImages(values);
+	if (!usable.length) return undefined;
+
+	return usable[rotationTick % usable.length];
+}
+
+/**
+ * Whether a user's rotation list has enough usable entries to be worth a timer. Supplying
+ * two or more images is itself the request to cycle them, so this is independent of the
+ * built-in useRotatingIcon toggle.
+ */
+export function rotatesCustomImages(values: readonly string[] | undefined): boolean {
+	return usableCustomImages(values).length > 1;
 }
 
 function stripGitSuffix(path: string) {

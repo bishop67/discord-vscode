@@ -20,6 +20,7 @@ import {
 	getConfig,
 	getGit,
 	normalizeRemoteUrl,
+	pickRotatingCustomImage,
 	pickRotatingImageKey,
 	repoNameFromRemote,
 	resolveCustomImage,
@@ -192,6 +193,16 @@ export async function activity(previous: ActivityPayload = {}) {
 	// Idle gets its own rotating bunny pool (e.g. "idle-vscode-1", "idle-vscode-2", ...).
 	// While idling there's no file icon to pair it with, so this shows alone.
 	const idleImageKey = pickRotatingImageKey(IDLE_IMAGE_KEY, useRotatingIcon);
+	// A user's own rotation list beats their single custom image, which in turn beats the
+	// built-in key for that slot. These are plain URLs, so they need no Developer Portal
+	// upload and work for anyone - unlike the bundled variants, which resolve to asset keys
+	// that only exist inside our Discord application.
+	const customLargeImage =
+		pickRotatingCustomImage(config[CONFIG_KEYS.CustomLargeImageRotation]) ??
+		resolveCustomImage(config[CONFIG_KEYS.CustomLargeImage]);
+	const customSmallImage =
+		pickRotatingCustomImage(config[CONFIG_KEYS.CustomSmallImageRotation]) ??
+		resolveCustomImage(config[CONFIG_KEYS.CustomSmallImage]);
 	const defaultLargeImageText = config[CONFIG_KEYS.LargeImageIdling];
 	const removeDetails = config[CONFIG_KEYS.RemoveDetails];
 	const removeLowerDetails = config[CONFIG_KEYS.RemoveLowerDetails];
@@ -205,8 +216,8 @@ export async function activity(previous: ActivityPayload = {}) {
 			? undefined
 			: await details(CONFIG_KEYS.DetailsIdling, CONFIG_KEYS.DetailsEditing, CONFIG_KEYS.DetailsDebugging),
 		startTimestamp: config[CONFIG_KEYS.RemoveTimestamp] ? undefined : (previous.startTimestamp ?? Date.now()),
-		// discord.customLargeImage always wins over the built-in idle badge.
-		largeImageKey: resolveCustomImage(config[CONFIG_KEYS.CustomLargeImage]) ?? idleImageKey,
+		// A custom large image always wins over the built-in idle badge.
+		largeImageKey: customLargeImage ?? idleImageKey,
 		largeImageText: defaultLargeImageText,
 	};
 
@@ -244,12 +255,8 @@ export async function activity(previous: ActivityPayload = {}) {
 		};
 
 		// Pick which one is the big image vs. the small corner badge, based on the
-		// extension's existing "Swap Big And Small Image" setting. Whatever is set
-		// in discord.customLargeImage / discord.customSmallImage takes priority
-		// over both the language icon and the app badge in that slot.
-		const customLargeImage = resolveCustomImage(config[CONFIG_KEYS.CustomLargeImage]);
-		const customSmallImage = resolveCustomImage(config[CONFIG_KEYS.CustomSmallImage]);
-
+		// extension's existing "Swap Big And Small Image" setting. A custom image takes
+		// priority over both the language icon and the app badge in that slot.
 		if (swapBigAndSmallImage) {
 			state = {
 				...state,

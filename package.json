@@ -188,10 +188,26 @@
 						"default": "",
 						"description": "Overrides the large image with your own picture. Paste a direct link to an image (ending in .png, .jpg, .gif, .webp, or .avif) - no Discord Developer Portal upload needed. Leave empty to use the default language icon."
 					},
+					"discord.customLargeImageRotation": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Rotate the large image through your own pictures. Add two or more direct image links (ending in .png, .jpg, .gif, .webp, or .avif) and they will be cycled every 30 seconds - no Discord Developer Portal upload needed. Takes priority over 'Custom Large Image'. Leave empty to disable."
+					},
 					"discord.customSmallImage": {
 						"type": "string",
 						"default": "",
 						"description": "Overrides the small corner image with your own picture. Paste a direct link to an image (ending in .png, .jpg, .gif, .webp, or .avif) - no Discord Developer Portal upload needed. Leave empty to use the default badge."
+					},
+					"discord.customSmallImageRotation": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Rotate the small corner image through your own pictures. Add two or more direct image links (ending in .png, .jpg, .gif, .webp, or .avif) and they will be cycled every 30 seconds - no Discord Developer Portal upload needed. Takes priority over 'Custom Small Image'. Leave empty to disable."
 					},
 					"discord.suppressNotifications": {
 						"type": "boolean",

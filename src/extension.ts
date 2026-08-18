@@ -11,7 +11,7 @@ import {
 	ROTATION_INTERVAL_SECONDS,
 } from './constants';
 import { log, LogLevel } from './logger';
-import { advanceRotation, getConfig, getGit } from './util';
+import { advanceRotation, getConfig, getGit, rotatesCustomImages } from './util';
 
 function resolveClientId() {
 	return getConfig()[CONFIG_KEYS.AppIcon] === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER;
@@ -86,7 +86,15 @@ function startRotation() {
 	stopRotation();
 
 	const config = getConfig();
-	if (!config[CONFIG_KEYS.Enabled] || !config[CONFIG_KEYS.UseRotatingIcon]) return;
+	if (!config[CONFIG_KEYS.Enabled]) return;
+
+	// A user's URL list is its own opt-in: supplying two or more images is the request to
+	// cycle them, so it does not also require the built-in badge toggle.
+	const hasCustomRotation =
+		rotatesCustomImages(config[CONFIG_KEYS.CustomLargeImageRotation]) ||
+		rotatesCustomImages(config[CONFIG_KEYS.CustomSmallImageRotation]);
+
+	if (!config[CONFIG_KEYS.UseRotatingIcon] && !hasCustomRotation) return;
 
 	// eslint-disable-next-line no-restricted-globals
 	rotation = setInterval(() => {
@@ -236,7 +244,13 @@ export async function activate(context: ExtensionContext) {
 			return;
 		}
 
-		if (event.affectsConfiguration('discord.useRotatingIcon')) startRotation();
+		if (
+			event.affectsConfiguration('discord.useRotatingIcon') ||
+			event.affectsConfiguration('discord.customLargeImageRotation') ||
+			event.affectsConfiguration('discord.customSmallImageRotation')
+		) {
+			startRotation();
+		}
 
 		await sendActivity();
 	});

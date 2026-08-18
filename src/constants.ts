@@ -85,7 +85,9 @@ export const enum REPLACE_KEYS {
 export const enum CONFIG_KEYS {
 	AppIcon = 'appIcon',
 	CustomLargeImage = 'customLargeImage',
+	CustomLargeImageRotation = 'customLargeImageRotation',
 	CustomSmallImage = 'customSmallImage',
+	CustomSmallImageRotation = 'customSmallImageRotation',
 	DetailsDebugging = 'detailsDebugging',
 	DetailsEditing = 'detailsEditing',
 	DetailsIdling = 'detailsIdling',
