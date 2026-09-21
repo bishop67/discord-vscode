@@ -170,7 +170,9 @@ async function details(idling: CONFIG_KEYS, editing: CONFIG_KEYS, debugging: CON
 			.replace(REPLACE_KEYS.LanguageUpperCase, toUpper(fileIcon));
 	}
 
-	return raw;
+	// Discord rejects the whole activity if details/state is an empty string, so a blank
+	// setting (e.g. "detailsEditing": "") would wipe the presence instead of hiding the line.
+	return raw.trim() ? raw : undefined;
 }
 
 export async function activity(previous: ActivityPayload = {}) {
