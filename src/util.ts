@@ -9,6 +9,7 @@ import { log, LogLevel } from './logger';
 let git: API | null | undefined;
 
 type WorkspaceExtensionConfiguration = WorkspaceConfiguration & {
+	activityType: 'competing' | 'listening' | 'playing' | 'watching';
 	appIcon: 'flower' | 'universal';
 	customLargeImage: string;
 	customLargeImageRotation: string[];

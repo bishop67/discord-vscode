@@ -2,6 +2,7 @@ import { basename, parse, sep } from 'node:path';
 import type { Selection, TextDocument, Diagnostic } from 'vscode';
 import { debug, env, window, workspace, languages, DiagnosticSeverity } from 'vscode';
 import {
+	ACTIVITY_TYPES,
 	CONFIG_KEYS,
 	CURSOR_IMAGE_KEY,
 	DEBUG_IMAGE_KEY,
@@ -213,7 +214,7 @@ export async function activity(previous: ActivityPayload = {}) {
 	const git = await getGit();
 
 	let state: ActivityPayload = {
-		type: 0,
+		type: ACTIVITY_TYPES[config[CONFIG_KEYS.ActivityType]] ?? 0,
 		details: removeDetails
 			? undefined
 			: await details(CONFIG_KEYS.DetailsIdling, CONFIG_KEYS.DetailsEditing, CONFIG_KEYS.DetailsDebugging),

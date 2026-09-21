@@ -120,6 +120,23 @@
 						"default": true,
 						"description": "Controls if the Discord Presence should show across all workspaces"
 					},
+					"discord.activityType": {
+						"type": "string",
+						"enum": [
+							"playing",
+							"listening",
+							"watching",
+							"competing"
+						],
+						"enumDescriptions": [
+							"Playing Visual Studio Code",
+							"Listening to Visual Studio Code",
+							"Watching Visual Studio Code",
+							"Competing in Visual Studio Code"
+						],
+						"default": "playing",
+						"description": "The verb Discord shows before the app name. Discord doesn't allow apps to show no verb at all."
+					},
 					"discord.detailsIdling": {
 						"type": "string",
 						"default": "Idling",
