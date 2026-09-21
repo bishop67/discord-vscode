@@ -57,6 +57,17 @@ export const ROTATION_INTERVAL_SECONDS = 30 as const;
  */
 export const MIN_ACTIVITY_INTERVAL_MS = 4_000 as const;
 
+/**
+ * Discord activity types that RPC accepts. Streaming (1) needs a stream URL and Custom (4)
+ * is reserved for the Discord client, so neither can be set from here.
+ */
+export const ACTIVITY_TYPES: Readonly<Record<string, number>> = {
+	playing: 0,
+	listening: 2,
+	watching: 3,
+	competing: 5,
+};
+
 export const UNKNOWN_GIT_BRANCH = 'Unknown' as const;
 export const UNKNOWN_GIT_REPO_NAME = 'Unknown' as const;
 
@@ -83,6 +94,7 @@ export const enum REPLACE_KEYS {
 }
 
 export const enum CONFIG_KEYS {
+	ActivityType = 'activityType',
 	AppIcon = 'appIcon',
 	CustomLargeImage = 'customLargeImage',
 	CustomLargeImageRotation = 'customLargeImageRotation',
