@@ -170,8 +170,8 @@ async function details(idling: CONFIG_KEYS, editing: CONFIG_KEYS, debugging: CON
 			.replace(REPLACE_KEYS.LanguageUpperCase, toUpper(fileIcon));
 	}
 
-	// Discord rejects the whole activity if details/state is an empty string.
-	return raw.trim() ? raw : undefined;
+	// Discord rejects the whole activity if details/state is empty, under 2 or over 128 characters.
+	return raw.trim() ? raw.slice(0, 128).padEnd(2, FAKE_EMPTY) : undefined;
 }
 
 export async function activity(previous: ActivityPayload = {}) {

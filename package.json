@@ -2,7 +2,7 @@
 	"$schema": "https://json.schemastore.org/package.json",
 	"name": "discord-vscode-custom",
 	"displayName": "Discord Presence (Custom)",
-	"version": "5.10.3",
+	"version": "5.10.4",
 	"description": "Update your discord status with a rich presence.",
 	"private": true,
 	"publisher": "bishop-local",

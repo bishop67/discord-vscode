@@ -18,7 +18,8 @@ function resolveClientId() {
 	const appIcon = config[CONFIG_KEYS.AppIcon];
 	const customId = config[CONFIG_KEYS.ClientId].trim();
 
-	if (appIcon === 'custom' && customId) return customId;
+	// Snowflakes are 17-20 digits; anything else (e.g. half-typed) would fail to connect.
+	if (appIcon === 'custom' && /^\d{17,20}$/.test(customId)) return customId;
 	return appIcon === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER;
 }
 
@@ -32,6 +33,7 @@ let idle: NodeJS.Timeout | undefined;
 let rotation: NodeJS.Timeout | undefined;
 let pendingActivity: NodeJS.Timeout | undefined;
 let lastActivityAt = 0;
+let loginAttempt = 0;
 let listeners: { dispose(): any }[] = [];
 
 function stopRotation() {
@@ -74,7 +76,11 @@ async function sendActivity() {
 	state = {
 		...(await activity(state)),
 	};
-	void rpc.user?.setActivity(state);
+	try {
+		await rpc.user?.setActivity(state);
+	} catch (error) {
+		log(LogLevel.Error, `Discord rejected the activity: ${error as string}`);
+	}
 }
 
 function startRotation() {
@@ -92,8 +98,12 @@ function startRotation() {
 
 async function login() {
 	log(LogLevel.Info, 'Creating discord-rpc client');
+	const attempt = ++loginAttempt;
 	const clientId = resolveClientId();
 	await loadAssets(clientId);
+	// Disabled or reconnected while the assets were loading.
+	if (attempt !== loginAttempt) return;
+
 	rpc = new Client({ transport: { type: 'ipc' }, clientId });
 
 	rpc.on('ready', () => {
@@ -181,6 +191,7 @@ export async function activate(context: ExtensionContext) {
 		}
 
 		log(LogLevel.Info, 'Disable: Cleaning up old listeners');
+		loginAttempt++;
 		cleanUp();
 		void rpc?.destroy();
 		log(LogLevel.Info, 'Disable: Destroyed the rpc instance');
