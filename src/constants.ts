@@ -1,7 +1,7 @@
 import LANG from './data/languages.json';
 
 // The app icon belongs to the Discord application, so each icon choice is its own app.
-// Assets are per-application: every image key has to be uploaded to both.
+// Images only live in the flower app; the others borrow them (see loadAssets).
 export const CLIENT_ID_FLOWER = '1486667060447805561' as const;
 export const CLIENT_ID_UNIVERSAL = '1539164834556551178' as const;
 

@@ -3,13 +3,7 @@ import { URL } from 'node:url';
 import type { TextDocument, WorkspaceConfiguration } from 'vscode';
 import { workspace, extensions } from 'vscode';
 import type { API, GitExtension } from './@types/git';
-import {
-	CLIENT_ID_FLOWER,
-	CLIENT_ID_UNIVERSAL,
-	KNOWN_EXTENSIONS,
-	KNOWN_LANGUAGES,
-	ROTATING_IMAGE_VARIANT_COUNTS,
-} from './constants';
+import { CLIENT_ID_FLOWER, KNOWN_EXTENSIONS, KNOWN_LANGUAGES, ROTATING_IMAGE_VARIANT_COUNTS } from './constants';
 import { log, LogLevel } from './logger';
 
 let git: API | null | undefined;
@@ -82,9 +76,9 @@ async function fetchAssetIds(clientId: string) {
 let customAssets: Map<string, string> | undefined;
 let defaultAssets = new Map<string, string>();
 
-// With a user's own app, images they didn't upload fall back to ours on Discord's CDN.
+// Any other app (including our universal one) falls back to the flower app's images on Discord's CDN.
 export async function loadAssets(clientId: string) {
-	if (clientId === CLIENT_ID_FLOWER || clientId === CLIENT_ID_UNIVERSAL) {
+	if (clientId === CLIENT_ID_FLOWER) {
 		customAssets = undefined;
 		return;
 	}

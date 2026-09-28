@@ -314,7 +314,7 @@
 		},
 		{
 			"language": "razor",
-			"image": "cshtml"
+			"image": "razor"
 		},
 		{
 			"language": "reasonml",
@@ -434,7 +434,7 @@
 		},
 		{
 			"language": "zenscript",
-			"image": "zs"
+			"image": "zenscript"
 		}
 	],
 	"KNOWN_EXTENSIONS": {
@@ -526,16 +526,16 @@
 			"image": "arduino"
 		},
 		".swf": {
-			"image": "as"
+			"image": "text"
 		},
 		".as": {
-			"image": "as"
+			"image": "text"
 		},
 		".jsfl": {
-			"image": "as"
+			"image": "text"
 		},
 		".swc": {
-			"image": "as"
+			"image": "text"
 		},
 		".asp": {
 			"image": "asp"
@@ -637,19 +637,19 @@
 			"image": "cargo"
 		},
 		".casc": {
-			"image": "casc"
+			"image": "text"
 		},
 		".cas": {
-			"image": "casc"
+			"image": "text"
 		},
 		".ces": {
 			"image": "citrinescript"
 		},
 		".cfc": {
-			"image": "coldfusion"
+			"image": "text"
 		},
 		".cfm": {
-			"image": "coldfusion"
+			"image": "text"
 		},
 		"circle.yml": {
 			"image": "circleci"
@@ -787,13 +787,13 @@
 			"image": "denizen"
 		},
 		".dm": {
-			"image": "dm"
+			"image": "text"
 		},
 		".dme": {
-			"image": "dm"
+			"image": "text"
 		},
 		".dmm": {
-			"image": "dm"
+			"image": "text"
 		},
 		"/^(Dockerfile|docker-compose)|\\.docker(file|ignore)$/i": {
 			"image": "docker"
@@ -1618,10 +1618,10 @@
 			"image": "vb"
 		},
 		".vba": {
-			"image": "vba"
+			"image": "vb"
 		},
 		".vcxproj": {
-			"image": "vcxproj"
+			"image": "cpp"
 		},
 		".verse": {
 			"image": "verse"
@@ -1678,7 +1678,7 @@
 			"image": "mojo"
 		},
 		".zs": {
-			"image": "zs"
+			"image": "zenscript"
 		}
 	}
 }
