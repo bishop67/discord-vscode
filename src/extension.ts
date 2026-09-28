@@ -15,12 +15,11 @@ import { advanceRotation, getConfig, getGit, loadAssets } from './util';
 
 function resolveClientId() {
 	const config = getConfig();
-	const appIcon = config[CONFIG_KEYS.AppIcon];
 	const customId = config[CONFIG_KEYS.ClientId].trim();
 
-	// Snowflakes are 17-20 digits; anything else (e.g. half-typed) would fail to connect.
-	if (appIcon === 'custom' && /^\d{17,20}$/.test(customId)) return customId;
-	return appIcon === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER;
+	// Real IDs are 17-20 digits; a half-typed one would fail to connect.
+	if (/^\d{17,20}$/.test(customId)) return customId;
+	return config[CONFIG_KEYS.AppIcon] === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER;
 }
 
 const statusBarIcon: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left);

@@ -16,7 +16,7 @@ Want your own name and images on the card?
 
 1. Create an application at [discord.com/developers/applications](https://discord.com/developers/applications). Its name is what shows after "Playing".
 2. Optionally upload images under **Rich Presence → Art Assets**, named after the ones they replace: `idle-vscode`, `vscode`, `debugging`, or a language icon like `ts` or `js` (names are in `src/data/languages.json`). Anything you don't upload keeps the default image.
-3. Copy the **Application ID** into the `discord.clientId` setting and set `discord.appIcon` to `custom`.
+3. Copy the **Application ID** into the `discord.clientId` setting. Clear it to go back.
 
 ## Build
 

@@ -2,7 +2,7 @@
 	"$schema": "https://json.schemastore.org/package.json",
 	"name": "discord-vscode-custom",
 	"displayName": "Discord Presence (Custom)",
-	"version": "5.10.4",
+	"version": "5.10.5",
 	"description": "Update your discord status with a rich presence.",
 	"private": true,
 	"publisher": "bishop-local",
@@ -190,21 +190,19 @@
 						"type": "string",
 						"enum": [
 							"flower",
-							"universal",
-							"custom"
+							"universal"
 						],
 						"enumDescriptions": [
 							"Use the default flower icon next to the app name",
-							"Use a generic icon instead of the flower",
-							"Use your own Discord app's name and icon, from Client ID below"
+							"Use a generic icon instead of the flower"
 						],
 						"default": "flower",
-						"description": "Which icon shows next to the app name. Pick custom to use your own Discord app."
+						"description": "Which icon shows next to the app name. Ignored when Client ID is set."
 					},
 					"discord.clientId": {
 						"type": "string",
 						"default": "",
-						"markdownDescription": "Application ID of your own Discord app, from the [Developer Portal](https://discord.com/developers/applications). Its name and icon replace ours, and any image you upload under a built-in name (e.g. `idle-vscode`, `vscode`, `ts`) replaces ours too. Used when `#discord.appIcon#` is `custom`."
+						"markdownDescription": "Application ID of your own Discord app, from the [Developer Portal](https://discord.com/developers/applications). Its name and icon replace ours, and any image you upload under a built-in name (e.g. `idle-vscode`, `vscode`, `ts`) replaces ours too. Leave empty to use ours."
 					},
 					"discord.suppressNotifications": {
 						"type": "boolean",
