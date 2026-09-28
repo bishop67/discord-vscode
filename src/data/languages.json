@@ -526,16 +526,16 @@
 			"image": "arduino"
 		},
 		".swf": {
-			"image": "text"
+			"image": "as"
 		},
 		".as": {
-			"image": "text"
+			"image": "as"
 		},
 		".jsfl": {
-			"image": "text"
+			"image": "as"
 		},
 		".swc": {
-			"image": "text"
+			"image": "as"
 		},
 		".asp": {
 			"image": "asp"
@@ -637,19 +637,19 @@
 			"image": "cargo"
 		},
 		".casc": {
-			"image": "text"
+			"image": "casc"
 		},
 		".cas": {
-			"image": "text"
+			"image": "casc"
 		},
 		".ces": {
 			"image": "citrinescript"
 		},
 		".cfc": {
-			"image": "text"
+			"image": "coldfusion"
 		},
 		".cfm": {
-			"image": "text"
+			"image": "coldfusion"
 		},
 		"circle.yml": {
 			"image": "circleci"
@@ -787,13 +787,13 @@
 			"image": "denizen"
 		},
 		".dm": {
-			"image": "text"
+			"image": "dm"
 		},
 		".dme": {
-			"image": "text"
+			"image": "dm"
 		},
 		".dmm": {
-			"image": "text"
+			"image": "dm"
 		},
 		"/^(Dockerfile|docker-compose)|\\.docker(file|ignore)$/i": {
 			"image": "docker"
