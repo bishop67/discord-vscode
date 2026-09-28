@@ -10,7 +10,7 @@ let git: API | null | undefined;
 
 type WorkspaceExtensionConfiguration = WorkspaceConfiguration & {
 	activityType: 'competing' | 'listening' | 'playing' | 'watching';
-	appIcon: 'flower' | 'universal';
+	appIcon: 'custom' | 'flower' | 'universal';
 	clientId: string;
 	detailsDebugging: string;
 	detailsEditing: string;
