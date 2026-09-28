@@ -2,7 +2,8 @@ allowBuilds:
   '@vscode/vsce-sign': false
   esbuild: false
   keytar: false
-  register-scheme: false
 onlyBuiltDependencies:
   - '@vscode/vsce-sign'
   - keytar
+overrides:
+  jsonwebtoken: ^9.0.3
