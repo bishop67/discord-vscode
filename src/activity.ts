@@ -21,11 +21,10 @@ import {
 	getConfig,
 	getGit,
 	normalizeRemoteUrl,
-	pickRotatingCustomImage,
 	pickRotatingImageKey,
 	repoNameFromRemote,
-	resolveCustomImage,
 	resolveFileIcon,
+	resolveImage,
 	toLower,
 	toTitle,
 	toUpper,
@@ -171,8 +170,7 @@ async function details(idling: CONFIG_KEYS, editing: CONFIG_KEYS, debugging: CON
 			.replace(REPLACE_KEYS.LanguageUpperCase, toUpper(fileIcon));
 	}
 
-	// Discord rejects the whole activity if details/state is an empty string, so a blank
-	// setting (e.g. "detailsEditing": "") would wipe the presence instead of hiding the line.
+	// Discord rejects the whole activity if details/state is an empty string.
 	return raw.trim() ? raw : undefined;
 }
 
@@ -181,8 +179,6 @@ export async function activity(previous: ActivityPayload = {}) {
 	const swapBigAndSmallImage = config[CONFIG_KEYS.SwapBigAndSmallImage];
 
 	const appName = env.appName;
-	// Bunny badge shown alongside the file icon while editing. Which variant is showing is
-	// decided by the shared rotation tick, advanced on a timer rather than per update.
 	const activeBunnyKeyBase = debug.activeDebugSession
 		? DEBUG_IMAGE_KEY
 		: appName.includes('Cursor')
@@ -191,21 +187,9 @@ export async function activity(previous: ActivityPayload = {}) {
 				? VSCODE_INSIDERS_IMAGE_KEY
 				: VSCODE_IMAGE_KEY;
 	const useRotatingIcon = config[CONFIG_KEYS.UseRotatingIcon];
-	const activeBunnyKey = pickRotatingImageKey(activeBunnyKeyBase, useRotatingIcon);
+	const activeBunnyKey = resolveImage(pickRotatingImageKey(activeBunnyKeyBase, useRotatingIcon));
 	const activeBunnyText = config[CONFIG_KEYS.SmallImage].replace(REPLACE_KEYS.AppName, appName);
-	// Idle gets its own rotating bunny pool (e.g. "idle-vscode-1", "idle-vscode-2", ...).
-	// While idling there's no file icon to pair it with, so this shows alone.
-	const idleImageKey = pickRotatingImageKey(IDLE_IMAGE_KEY, useRotatingIcon);
-	// A user's own rotation list beats their single custom image, which in turn beats the
-	// built-in key for that slot. These are plain URLs, so they need no Developer Portal
-	// upload and work for anyone - unlike the bundled variants, which resolve to asset keys
-	// that only exist inside our Discord application.
-	const customLargeImage =
-		pickRotatingCustomImage(config[CONFIG_KEYS.CustomLargeImageRotation]) ??
-		resolveCustomImage(config[CONFIG_KEYS.CustomLargeImage]);
-	const customSmallImage =
-		pickRotatingCustomImage(config[CONFIG_KEYS.CustomSmallImageRotation]) ??
-		resolveCustomImage(config[CONFIG_KEYS.CustomSmallImage]);
+	const idleImageKey = resolveImage(pickRotatingImageKey(IDLE_IMAGE_KEY, useRotatingIcon));
 	const defaultLargeImageText = config[CONFIG_KEYS.LargeImageIdling];
 	const removeDetails = config[CONFIG_KEYS.RemoveDetails];
 	const removeLowerDetails = config[CONFIG_KEYS.RemoveLowerDetails];
@@ -219,8 +203,7 @@ export async function activity(previous: ActivityPayload = {}) {
 			? undefined
 			: await details(CONFIG_KEYS.DetailsIdling, CONFIG_KEYS.DetailsEditing, CONFIG_KEYS.DetailsDebugging),
 		startTimestamp: config[CONFIG_KEYS.RemoveTimestamp] ? undefined : (previous.startTimestamp ?? Date.now()),
-		// A custom large image always wins over the built-in idle badge.
-		largeImageKey: customLargeImage ?? idleImageKey,
+		largeImageKey: idleImageKey,
 		largeImageText: defaultLargeImageText,
 	};
 
@@ -237,15 +220,14 @@ export async function activity(previous: ActivityPayload = {}) {
 	}
 
 	if (window.activeTextEditor) {
-		const fileImageKey = resolveFileIcon(window.activeTextEditor.document);
+		const fileIcon = resolveFileIcon(window.activeTextEditor.document);
+		const fileImageKey = resolveImage(fileIcon);
 		const fileImageText = config[CONFIG_KEYS.LargeImage]
-			.replace(REPLACE_KEYS.LanguageLowerCase, toLower(fileImageKey))
-			.replace(REPLACE_KEYS.LanguageTitleCase, toTitle(fileImageKey))
-			.replace(REPLACE_KEYS.LanguageUpperCase, toUpper(fileImageKey))
+			.replace(REPLACE_KEYS.LanguageLowerCase, toLower(fileIcon))
+			.replace(REPLACE_KEYS.LanguageTitleCase, toTitle(fileIcon))
+			.replace(REPLACE_KEYS.LanguageUpperCase, toUpper(fileIcon))
 			.padEnd(2, FAKE_EMPTY);
 
-		// `details` is already on `state` from the same call above - recomputing it here cost a
-		// second workspace.fs.stat and git lookup on every keystroke batch for an identical result.
 		state = {
 			...state,
 			state: removeLowerDetails
@@ -257,23 +239,20 @@ export async function activity(previous: ActivityPayload = {}) {
 					),
 		};
 
-		// Pick which one is the big image vs. the small corner badge, based on the
-		// extension's existing "Swap Big And Small Image" setting. A custom image takes
-		// priority over both the language icon and the app badge in that slot.
 		if (swapBigAndSmallImage) {
 			state = {
 				...state,
-				largeImageKey: customLargeImage ?? activeBunnyKey,
+				largeImageKey: activeBunnyKey,
 				largeImageText: activeBunnyText,
-				smallImageKey: customSmallImage ?? fileImageKey,
+				smallImageKey: fileImageKey,
 				smallImageText: fileImageText,
 			};
 		} else {
 			state = {
 				...state,
-				largeImageKey: customLargeImage ?? fileImageKey,
+				largeImageKey: fileImageKey,
 				largeImageText: fileImageText,
-				smallImageKey: customSmallImage ?? activeBunnyKey,
+				smallImageKey: activeBunnyKey,
 				smallImageText: activeBunnyText,
 			};
 		}

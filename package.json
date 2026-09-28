@@ -2,7 +2,7 @@
 	"$schema": "https://json.schemastore.org/package.json",
 	"name": "discord-vscode-custom",
 	"displayName": "Discord Presence (Custom)",
-	"version": "5.9.6",
+	"version": "5.10.0",
 	"description": "Update your discord status with a rich presence.",
 	"private": true,
 	"publisher": "bishop-local",
@@ -135,7 +135,7 @@
 							"Competing in Visual Studio Code"
 						],
 						"default": "playing",
-						"description": "The verb Discord shows before the app name. Discord doesn't allow apps to show no verb at all."
+						"description": "The verb Discord shows before the app name."
 					},
 					"discord.detailsIdling": {
 						"type": "string",
@@ -198,33 +198,12 @@
 							"Use a generic icon instead of the flower"
 						],
 						"default": "flower",
-						"description": "Which icon shows next to the app name in your Rich Presence card. Unlike the large/small images, this can't be a custom URL - it's tied to which Discord application the extension connects as."
+						"description": "Which icon shows next to the app name. Ignored when a Client Id is set."
 					},
-					"discord.customLargeImage": {
+					"discord.clientId": {
 						"type": "string",
 						"default": "",
-						"description": "Overrides the large image with your own picture. Paste a direct link to an image (ending in .png, .jpg, .gif, .webp, or .avif) - no Discord Developer Portal upload needed. Leave empty to use the default language icon."
-					},
-					"discord.customLargeImageRotation": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Rotate the large image through your own pictures. Add two or more direct image links (ending in .png, .jpg, .gif, .webp, or .avif) and they will be cycled every 30 seconds - no Discord Developer Portal upload needed. Takes priority over 'Custom Large Image'. Leave empty to disable."
-					},
-					"discord.customSmallImage": {
-						"type": "string",
-						"default": "",
-						"description": "Overrides the small corner image with your own picture. Paste a direct link to an image (ending in .png, .jpg, .gif, .webp, or .avif) - no Discord Developer Portal upload needed. Leave empty to use the default badge."
-					},
-					"discord.customSmallImageRotation": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": [],
-						"description": "Rotate the small corner image through your own pictures. Add two or more direct image links (ending in .png, .jpg, .gif, .webp, or .avif) and they will be cycled every 30 seconds - no Discord Developer Portal upload needed. Takes priority over 'Custom Small Image'. Leave empty to disable."
+						"markdownDescription": "Application ID of your own Discord app, from the [Developer Portal](https://discord.com/developers/applications). Its name and icon replace ours, and any image you upload under a built-in name (e.g. `idle-vscode`, `vscode`, `ts`) replaces ours too. Overrides `#discord.appIcon#`. Leave empty to use ours."
 					},
 					"discord.suppressNotifications": {
 						"type": "boolean",
@@ -247,7 +226,7 @@
 					"discord.useRotatingIcon": {
 						"type": "boolean",
 						"default": false,
-						"description": "Rotate between multiple custom badge icons. Turn off to always use one static icon."
+						"description": "Cycle the idle, editing and debugging badges every 30 seconds."
 					},
 					"discord.removeDetails": {
 						"type": "boolean",
