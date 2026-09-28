@@ -11,10 +11,14 @@ import {
 	ROTATION_INTERVAL_SECONDS,
 } from './constants';
 import { log, LogLevel } from './logger';
-import { advanceRotation, getConfig, getGit, rotatesCustomImages } from './util';
+import { advanceRotation, getConfig, getGit, loadAssets } from './util';
 
 function resolveClientId() {
-	return getConfig()[CONFIG_KEYS.AppIcon] === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER;
+	const config = getConfig();
+	return (
+		config[CONFIG_KEYS.ClientId].trim() ||
+		(config[CONFIG_KEYS.AppIcon] === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER)
+	);
 }
 
 const statusBarIcon: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left);
@@ -50,12 +54,7 @@ export function cleanUp() {
 	}
 }
 
-/**
- * Discord drops presence updates past roughly 5 per 20 seconds. Editor switches plus the
- * 2s edit throttle exceed that easily, and the dropped updates used to leave the presence
- * stuck on a stale icon. Anything requested inside the cooldown is collapsed into a single
- * trailing update instead, so the latest state always lands.
- */
+// Updates inside the cooldown collapse into one trailing update so the latest state always lands.
 async function sendActivity() {
 	const waitFor = MIN_ACTIVITY_INTERVAL_MS - (Date.now() - lastActivityAt);
 
@@ -77,24 +76,11 @@ async function sendActivity() {
 	void rpc.user?.setActivity(state);
 }
 
-/**
- * Rotation runs on its own timer so the icon advances at a steady cadence whether or not
- * you happen to be typing. Picking a new variant inside each presence update instead made
- * it flicker mid-keystroke and stop dead as soon as you paused.
- */
 function startRotation() {
 	stopRotation();
 
 	const config = getConfig();
-	if (!config[CONFIG_KEYS.Enabled]) return;
-
-	// A user's URL list is its own opt-in: supplying two or more images is the request to
-	// cycle them, so it does not also require the built-in badge toggle.
-	const hasCustomRotation =
-		rotatesCustomImages(config[CONFIG_KEYS.CustomLargeImageRotation]) ||
-		rotatesCustomImages(config[CONFIG_KEYS.CustomSmallImageRotation]);
-
-	if (!config[CONFIG_KEYS.UseRotatingIcon] && !hasCustomRotation) return;
+	if (!config[CONFIG_KEYS.Enabled] || !config[CONFIG_KEYS.UseRotatingIcon]) return;
 
 	// eslint-disable-next-line no-restricted-globals
 	rotation = setInterval(() => {
@@ -105,7 +91,9 @@ function startRotation() {
 
 async function login() {
 	log(LogLevel.Info, 'Creating discord-rpc client');
-	rpc = new Client({ transport: { type: 'ipc' }, clientId: resolveClientId() });
+	const clientId = resolveClientId();
+	await loadAssets(clientId);
+	rpc = new Client({ transport: { type: 'ipc' }, clientId });
 
 	rpc.on('ready', () => {
 		log(LogLevel.Info, 'Successfully connected to Discord');
@@ -120,8 +108,7 @@ async function login() {
 		const throttledSendActivity = throttle(() => void sendActivity(), 2_000);
 		const onChangeActiveTextEditor = window.onDidChangeActiveTextEditor(() => void sendActivity());
 		const onChangeTextDocument = workspace.onDidChangeTextDocument((event) => {
-			// Output panels, logs and other background documents fire this too - only edits to
-			// the file actually on screen should refresh the presence.
+			// Output panels and logs fire this too.
 			if (event.document === window.activeTextEditor?.document) throttledSendActivity();
 		});
 		const onStartDebugSession = debug.onDidStartDebugSession(() => void sendActivity());
@@ -222,9 +209,6 @@ export async function activate(context: ExtensionContext) {
 		statusBarIcon.show();
 	});
 
-	// Settings used to be read once at module load, so changing any of them needed a full
-	// window reload to take effect. They are read live now, and this keeps the two things
-	// that are not re-read per update - the connection and the rotation timer - in sync.
 	const configWatcher = workspace.onDidChangeConfiguration(async (event) => {
 		if (!event.affectsConfiguration('discord')) return;
 
@@ -236,21 +220,14 @@ export async function activate(context: ExtensionContext) {
 
 		if (!getConfig()[CONFIG_KEYS.Enabled]) return;
 
-		// The Rich Presence app icon belongs to the Discord application itself rather than to
-		// the activity payload, so switching it means logging into the other application.
-		if (event.affectsConfiguration('discord.appIcon')) {
+		// A different Discord application means logging in again.
+		if (event.affectsConfiguration('discord.appIcon') || event.affectsConfiguration('discord.clientId')) {
 			await disable(false);
 			await enable(false);
 			return;
 		}
 
-		if (
-			event.affectsConfiguration('discord.useRotatingIcon') ||
-			event.affectsConfiguration('discord.customLargeImageRotation') ||
-			event.affectsConfiguration('discord.customSmallImageRotation')
-		) {
-			startRotation();
-		}
+		if (event.affectsConfiguration('discord.useRotatingIcon')) startRotation();
 
 		await sendActivity();
 	});
@@ -272,7 +249,6 @@ export async function activate(context: ExtensionContext) {
 			// eslint-disable-next-line no-restricted-globals
 			idle = setTimeout(async () => {
 				idle = undefined;
-				// Nothing to rotate once the presence has been cleared.
 				stopRotation();
 				state = {};
 				await rpc.user?.clearActivity();

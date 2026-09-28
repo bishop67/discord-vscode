@@ -10,6 +10,23 @@
 - Debug mode detection
 - Easily manually reconnect to Discord
 
+## Use your own Discord app
+
+Want your own name and images on the card?
+
+1. Create an application at [discord.com/developers/applications](https://discord.com/developers/applications). Its name is what shows after "Playing".
+2. Optionally upload images under **Rich Presence → Art Assets**, named after the ones they replace: `idle-vscode`, `vscode`, `debugging`, or a language icon like `ts` or `js` (names are in `src/data/languages.json`). Anything you don't upload keeps the default image.
+3. Copy the **Application ID** into the `discord.clientId` setting.
+
+## Build
+
+```
+pnpm install
+node esbuild.mjs
+pnpm exec vsce package --no-dependencies
+code --install-extension discord-vscode-custom-<version>.vsix
+```
+
 ## Troubleshooting
 
 **Windows:** Do not run your VSCode or Discord as admin, there is no reason to and it just further complicates everything down the line.
