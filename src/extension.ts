@@ -15,10 +15,11 @@ import { advanceRotation, getConfig, getGit, loadAssets } from './util';
 
 function resolveClientId() {
 	const config = getConfig();
-	return (
-		config[CONFIG_KEYS.ClientId].trim() ||
-		(config[CONFIG_KEYS.AppIcon] === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER)
-	);
+	const appIcon = config[CONFIG_KEYS.AppIcon];
+	const customId = config[CONFIG_KEYS.ClientId].trim();
+
+	if (appIcon === 'custom' && customId) return customId;
+	return appIcon === 'universal' ? CLIENT_ID_UNIVERSAL : CLIENT_ID_FLOWER;
 }
 
 const statusBarIcon: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left);
