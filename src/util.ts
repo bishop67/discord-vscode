@@ -75,15 +75,22 @@ async function fetchAssetIds(clientId: string) {
 
 let customAssets: Map<string, string> | undefined;
 let defaultAssets = new Map<string, string>();
+let assetRequest = 0;
 
 // Any other app (including our universal one) falls back to the flower app's images on Discord's CDN.
 export async function loadAssets(clientId: string) {
+	const request = ++assetRequest;
 	if (clientId === CLIENT_ID_FLOWER) {
 		customAssets = undefined;
 		return;
 	}
 
-	[customAssets, defaultAssets] = await Promise.all([fetchAssetIds(clientId), fetchAssetIds(CLIENT_ID_FLOWER)]);
+	const [custom, fallback] = await Promise.all([fetchAssetIds(clientId), fetchAssetIds(CLIENT_ID_FLOWER)]);
+	// A newer login asked for a different app meanwhile.
+	if (request !== assetRequest) return;
+
+	customAssets = custom;
+	defaultAssets = fallback;
 }
 
 export function resolveImage(key: string) {
