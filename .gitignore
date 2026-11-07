@@ -52,3 +52,8 @@ bun.lockb
 .prettiercache
 .eslintcache
 .vercel
+
+# Claude
+.claude/
+CLAUDE.md
+CLAUDE.local.md
